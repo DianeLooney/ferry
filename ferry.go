@@ -19,13 +19,15 @@ type Ferry interface {
 	Lock()
 
 	// Unlock causes all waiting goroutines to be unblocked
+	// It is expected that some calls to Unlock() will occur with no Locks
+	// acquired. This is expected behaviour, and is not a runtime error.
 	Unlock()
 }
 
 // NewFerry returns a new Ferry
 func NewFerry() Ferry {
 	return &block{
-		ch: make(chan empty),
+		chs: make([]chan empty, 0),
 	}
 }
 
@@ -34,27 +36,25 @@ type empty struct{}
 var e = empty{}
 
 type block struct {
-	wg sync.WaitGroup
-	ch  chan empty
+	mtx sync.Mutex
+	chs []chan empty
 }
 
 func (b *block) Lock() {
-	b.wg.Wait()
-
-	<-b.ch
+	b.mtx.Lock()
+	ch := make(chan empty)
+	b.chs = append(b.chs, ch)
+	b.mtx.Unlock()
+	<-ch
 }
 
 func (b *block) Unlock() {
-	b.wg.Wait()
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
 
-	b.wg.Add(1)
-	defer b.wg.Done()
-
-	for {
-		select {
-		case b.ch <- empty{}:
-		default:
-			return
-		}
+	for _, ch := range b.chs {
+		ch <- empty{}
 	}
+
+	b.chs = make([]chan empty, 0)
 }

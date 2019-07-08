@@ -1,6 +1,7 @@
 package ferry_test
 
 import (
+	"sync/atomic"
 	"sync"
 	"testing"
 	"time"
@@ -75,5 +76,28 @@ func TestItBlocksWhileUnblocking(t *testing.T) {
 	}
 	if fail {
 		t.Errorf("It unlocked the same goroutine more than once")
+	}
+}
+
+func TestMultipleUnlockCalls(t *testing.T) {
+	const n = 10000
+	b := NewFerry()
+	var count int32
+	for i := 0; i < n; i++ {
+		go func() {
+				b.Lock()
+				b.Lock()
+				atomic.AddInt32(&count, 1)
+		}()
+	}
+
+	time.Sleep(250 * time.Millisecond)
+	b.Unlock()
+	time.Sleep(250 * time.Millisecond)
+	b.Unlock()
+	time.Sleep(250 * time.Millisecond)
+	
+	if n != atomic.LoadInt32(&count) {
+		t.Errorf("It did not unblock all goroutines twice, expected '%v' got '%v'", n, count)
 	}
 }
