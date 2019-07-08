@@ -11,7 +11,8 @@ var e = empty{}
 // A Ferry is a synchronization mechanism similar to a WaitGroup.
 //
 // All calls to Wait are blocking, and become unblocked the next time Done is
-// called. A single call 
+// called. A single call to Done will unblock all goroutines Waiting on the
+// Ferry.
 //
 // Calling Done will unblock all currently Waiting goroutines
 //
