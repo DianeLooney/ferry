@@ -11,13 +11,13 @@ import (
 
 func TestItBlocks(t *testing.T) {
 	var order []int
-	b := NewFerry()
+	b := Ferry{}
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		order = append(order, 1)
-		b.Unlock()
+		b.Done()
 	}()
-	b.Lock()
+	b.Wait()
 	order = append(order, 2)
 	if order[0] != 1 || order[1] != 2 {
 		t.Error("It did not block in the proper order")
@@ -29,10 +29,10 @@ func TestItBlocksMany(t *testing.T) {
 	done := 0
 	mtx := sync.Mutex{}
 
-	b := NewFerry()
+	b := Ferry{}
 	for i := 0; i < n; i++ {
 		go func(i int) {
-			b.Lock()
+			b.Wait()
 
 			mtx.Lock()
 			defer mtx.Unlock()
@@ -43,7 +43,7 @@ func TestItBlocksMany(t *testing.T) {
 	if done != 0 {
 		t.Errorf("It did not block all goroutines")
 	}
-	b.Unlock()
+	b.Done()
 	time.Sleep(250 * time.Millisecond)
 	if done != n {
 		t.Errorf("It did not unblock all goroutines")
@@ -53,12 +53,12 @@ func TestItBlocksMany(t *testing.T) {
 func TestItBlocksWhileUnblocking(t *testing.T) {
 	const n = 10000
 	fail := false
-	b := NewFerry()
+	b := Ferry{}
 	for i := 0; i < n; i++ {
 		go func() {
 			for {
-				b.Lock()
-				b.Lock()
+				b.Wait()
+				b.Wait()
 				fail = true
 			}
 		}()
@@ -66,7 +66,7 @@ func TestItBlocksWhileUnblocking(t *testing.T) {
 
 	done := false
 	go func() {
-		b.Unlock()
+		b.Done()
 		done = true
 	}()
 	time.Sleep(250 * time.Millisecond)
@@ -81,20 +81,20 @@ func TestItBlocksWhileUnblocking(t *testing.T) {
 
 func TestMultipleUnlockCalls(t *testing.T) {
 	const n = 10000
-	b := NewFerry()
+	b := Ferry{}
 	var count int32
 	for i := 0; i < n; i++ {
 		go func() {
-				b.Lock()
-				b.Lock()
+				b.Wait()
+				b.Wait()
 				atomic.AddInt32(&count, 1)
 		}()
 	}
 
 	time.Sleep(250 * time.Millisecond)
-	b.Unlock()
+	b.Done()
 	time.Sleep(250 * time.Millisecond)
-	b.Unlock()
+	b.Done()
 	time.Sleep(250 * time.Millisecond)
 	
 	if n != atomic.LoadInt32(&count) {

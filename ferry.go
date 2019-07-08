@@ -4,43 +4,30 @@ import (
 	"sync"
 )
 
-// A Ferry is a synchronization mechanism
-// * All calls to Lock are blocking
-// * Calling Unlock will unblock all currently waiting calls to Lock
-// 
-// If there are very many calls to Lock() and the ferry is spending a
-// significant amount of time in the Unlock() call, then subsequent
-// Lock() calls will wait for the current Unlock() to finish before listening
-// for an Unlock().
-// In other words: Unlock() always performs a finite amount of work, and will
-// always eventually return.
-type Ferry interface {
-	// Lock causes the goroutine to block until an Unlock call to the ferry
-	Lock()
-
-	// Unlock causes all waiting goroutines to be unblocked
-	// It is expected that some calls to Unlock() will occur with no Locks
-	// acquired. This is expected behaviour, and is not a runtime error.
-	Unlock()
-}
-
-// NewFerry returns a new Ferry
-func NewFerry() Ferry {
-	return &block{
-		chs: make([]chan empty, 0),
-	}
-}
-
 type empty struct{}
 
 var e = empty{}
 
-type block struct {
+// A Ferry is a synchronization mechanism similar to a WaitGroup.
+//
+// All calls to Wait are blocking, and become unblocked the next time Done is
+// called. A single call 
+//
+// Calling Done will unblock all currently Waiting goroutines
+//
+// If a Wait call occurs while a Ferry is still handling a Done call, then it
+// will wait for the Done to complete before it starts listening for a new
+// Done call.
+//
+// In other words: Done always performs a finite amount of work, and will
+// always eventually return, even with Wait being called frequently.
+type Ferry struct {
 	mtx sync.Mutex
 	chs []chan empty
 }
 
-func (b *block) Lock() {
+// Wait causes the goroutine to block until the next Done call to the ferry
+func (b *Ferry) Wait() {
 	b.mtx.Lock()
 	ch := make(chan empty)
 	b.chs = append(b.chs, ch)
@@ -48,13 +35,17 @@ func (b *block) Lock() {
 	<-ch
 }
 
-func (b *block) Unlock() {
+// Done causes all Waiting goroutines to be unblocked
+//
+// It is possible to call Done with no goroutines Waiting on the Ferry. This
+// is supported behaviour, and is not a runtime error.
+func (b *Ferry) Done() {
 	b.mtx.Lock()
-	defer b.mtx.Unlock()
+	sl := b.chs
+	b.chs = nil
+	b.mtx.Unlock()
 
-	for _, ch := range b.chs {
+	for _, ch := range sl {
 		ch <- empty{}
 	}
-
-	b.chs = make([]chan empty, 0)
 }
