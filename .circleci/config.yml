@@ -15,11 +15,11 @@ jobs:
     steps:
       - checkout
       - run: go get -v -t -d ./...
-      - run: mkdir coverage
-      - run: go test -v ./... -coverprofile=coverage/c.out
-      - run: go tool cover -html=coverage/c.out -o coverage/c.html
+      - run: mkdir /tmp/coverage
+      - run: go test -v ./... -coverprofile=/tmp/coverage/c.out
+      - run: go tool cover -html=/tmp/coverage/c.out -o /tmp/coverage/c.html
       - store_artifacts:
-          path: coverage
+          path: /tmp/coverage
 workflows:
   version: 2
   workflow:
