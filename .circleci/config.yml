@@ -3,7 +3,7 @@ jobs:
   build-go1.12:
     docker:
       - image: circleci/golang:1.12
-      working_directory: /go/src/github.com/tkeech1/gomodules
+      working_directory: /go/src/github.com/dianelooney/ferry
     steps:
       - checkout
       - run: go get -v -t -d ./...
