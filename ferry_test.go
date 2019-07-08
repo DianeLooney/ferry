@@ -45,13 +45,17 @@ func TestItBlocksMany(t *testing.T) {
 	}
 	b.Done()
 	time.Sleep(250 * time.Millisecond)
+
+	mtx.Lock()
+	defer mtx.Unlock()
+
 	if done != n {
 		t.Errorf("It did not unblock all goroutines")
 	}
 }
 
 func TestItBlocksWhileUnblocking(t *testing.T) {
-	const n = 10000
+	const n = 1000
 	fail := false
 	b := Ferry{}
 	for i := 0; i < n; i++ {
@@ -65,22 +69,29 @@ func TestItBlocksWhileUnblocking(t *testing.T) {
 	}
 
 	done := false
+	mtx := sync.Mutex{}
 	go func() {
 		b.Done()
+		mtx.Lock()
+		defer mtx.Unlock()
 		done = true
 	}()
 	time.Sleep(250 * time.Millisecond)
 	
+	mtx.Lock()
+	defer mtx.Unlock()
+
 	if !done {
 		t.Errorf("It did not return")
 	}
+
 	if fail {
 		t.Errorf("It unlocked the same goroutine more than once")
 	}
 }
 
 func TestMultipleUnlockCalls(t *testing.T) {
-	const n = 10000
+	const n = 1000
 	b := Ferry{}
 	var count int32
 	for i := 0; i < n; i++ {

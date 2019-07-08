@@ -1,4 +1,6 @@
 version: 2
+orbs:
+  codecov: codecov/codecov
 jobs:
   vet:
     docker:
@@ -16,10 +18,12 @@ jobs:
       - checkout
       - run: go get -v -t -d ./...
       - run: mkdir /tmp/coverage
-      - run: go test -v ./... -coverprofile=/tmp/coverage/c.out
+      - run: go test -race -v ./... -coverprofile=/tmp/coverage/c.out
       - run: go tool cover -html=/tmp/coverage/c.out -o /tmp/coverage/c.html
       - store_artifacts:
           path: /tmp/coverage
+      - codecov/upload:
+          file: /tmp/coverage/c.out
 workflows:
   version: 2
   workflow:
