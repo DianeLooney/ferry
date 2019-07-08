@@ -5,18 +5,18 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/dianelooney/block"
+	. "github.com/dianelooney/ferry"
 )
 
 func TestItBlocks(t *testing.T) {
 	var order []int
-	b := NewBlocker()
+	b := NewFerry()
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		order = append(order, 1)
-		b.Unblock()
+		b.Go()
 	}()
-	b.Block()
+	b.Wait()
 	order = append(order, 2)
 	if order[0] != 1 || order[1] != 2 {
 		t.Error("It did not block in the proper order")
@@ -27,10 +27,10 @@ func TestItBlocksMany(t *testing.T) {
 	done := 0
 	mtx := sync.Mutex{}
 
-	b := NewBlocker()
+	b := NewFerry()
 	for i := 0; i < n; i++ {
 		go func(i int) {
-			b.Block()
+			b.Wait()
 
 			mtx.Lock()
 			defer mtx.Unlock()
@@ -41,12 +41,7 @@ func TestItBlocksMany(t *testing.T) {
 	if done != 0 {
 		t.Errorf("It did not block all goroutines")
 	}
-	b.UnblockSingle()
-	time.Sleep(250 * time.Millisecond)
-	if done != 1 {
-		t.Errorf("It did not unblock all goroutines")
-	}
-	b.Unblock()
+	b.Go()
 	time.Sleep(250 * time.Millisecond)
 	if done != n {
 		t.Errorf("It did not unblock all goroutines")
@@ -56,17 +51,16 @@ func TestItBlocksMany(t *testing.T) {
 func TestItBlocksWhileUnblocking(t *testing.T) {
 	const n = 10000
 	fail := false
-	b := NewBlocker()
+	b := NewFerry()
 	for i := 0; i < n; i++ {
-		go func(i int) {
-			b.Block()
-		}(i)
+		go b.Wait()
 	}
-	b.Unblock()
 	go func() {
-		b.Block()
+		time.Sleep(1 * time.Millisecond)
+		b.Wait()
 		fail = true
 	}()
+	b.Go()
 	time.Sleep(250 * time.Millisecond)
 	if fail {
 		t.Errorf("It did not block after an immediate unblock call")
