@@ -1,3 +1,6 @@
+// Package ferry provides a Ferry synchronization. This acts similarly to a
+// sync.WaitGroup in that many gorotuines can Wait for a single Done, but it
+// is less efficient and less picky about how it is used.
 package ferry
 
 import (
