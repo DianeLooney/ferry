@@ -5,14 +5,21 @@ import (
 )
 
 // A Ferry is a synchronization mechanism
-// Conceptually, there is a Ferry that loads up many Waits, and then
-// a single Go causes all Waits to unblock.
+// * All calls to Lock are blocking
+// * Calling Unlock will unblock all currently waiting calls to Lock
+// 
+// If there are very many calls to Lock() and the ferry is spending a
+// significant amount of time in the Unlock() call, then subsequent
+// Lock() calls will wait for the current Unlock() to finish before listening
+// for an Unlock().
+// In other words: Unlock() always performs a finite amount of work, and will
+// always eventually return.
 type Ferry interface {
-	// Wait blocks the goroutine
-	Wait()
+	// Lock causes the goroutine to block until an Unlock call to the ferry
+	Lock()
 
-	// Go causes all waiting goroutines to be unblocked
-	Go()
+	// Unlock causes all waiting goroutines to be unblocked
+	Unlock()
 }
 
 // NewFerry returns a new Ferry
@@ -27,28 +34,25 @@ type empty struct{}
 var e = empty{}
 
 type block struct {
-	mtx sync.Mutex
+	wg sync.WaitGroup
 	ch  chan empty
 }
 
-func (b *block) unlock() { b.mtx.Unlock() }
-func (b *block) lock()   { b.mtx.Lock() }
-
-func (b *block) Wait() {
-	b.lock()
-	b.unlock()
+func (b *block) Lock() {
+	b.wg.Wait()
 
 	<-b.ch
 }
 
-func (b *block) Go() {
-	b.lock()
-	defer b.unlock()
+func (b *block) Unlock() {
+	b.wg.Wait()
+
+	b.wg.Add(1)
+	defer b.wg.Done()
 
 	for {
 		select {
 		case b.ch <- empty{}:
-			continue
 		default:
 			return
 		}

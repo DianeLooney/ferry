@@ -14,14 +14,15 @@ func TestItBlocks(t *testing.T) {
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		order = append(order, 1)
-		b.Go()
+		b.Unlock()
 	}()
-	b.Wait()
+	b.Lock()
 	order = append(order, 2)
 	if order[0] != 1 || order[1] != 2 {
 		t.Error("It did not block in the proper order")
 	}
 }
+
 func TestItBlocksMany(t *testing.T) {
 	const n = 1000
 	done := 0
@@ -30,7 +31,7 @@ func TestItBlocksMany(t *testing.T) {
 	b := NewFerry()
 	for i := 0; i < n; i++ {
 		go func(i int) {
-			b.Wait()
+			b.Lock()
 
 			mtx.Lock()
 			defer mtx.Unlock()
@@ -41,7 +42,7 @@ func TestItBlocksMany(t *testing.T) {
 	if done != 0 {
 		t.Errorf("It did not block all goroutines")
 	}
-	b.Go()
+	b.Unlock()
 	time.Sleep(250 * time.Millisecond)
 	if done != n {
 		t.Errorf("It did not unblock all goroutines")
@@ -53,16 +54,26 @@ func TestItBlocksWhileUnblocking(t *testing.T) {
 	fail := false
 	b := NewFerry()
 	for i := 0; i < n; i++ {
-		go b.Wait()
+		go func() {
+			for {
+				b.Lock()
+				b.Lock()
+				fail = true
+			}
+		}()
 	}
+
+	done := false
 	go func() {
-		time.Sleep(1 * time.Millisecond)
-		b.Wait()
-		fail = true
+		b.Unlock()
+		done = true
 	}()
-	b.Go()
 	time.Sleep(250 * time.Millisecond)
+	
+	if !done {
+		t.Errorf("It did not return")
+	}
 	if fail {
-		t.Errorf("It did not block after an immediate unblock call")
+		t.Errorf("It unlocked the same goroutine more than once")
 	}
 }
