@@ -1,0 +1,15 @@
+version: 2
+jobs:
+  build-go1.12:
+    docker:
+      - image: circleci/golang:1.12
+      working_directory: /go/src/github.com/tkeech1/gomodules
+    steps:
+      - checkout
+      - run: go get -v -t -d ./...
+      - run: go test -race
+workflows:
+  version: 2
+  build_and_test:
+  jobs:
+    - build-go1.12
