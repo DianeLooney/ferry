@@ -1,6 +1,6 @@
 version: 2
 orbs:
-  codecov: codecov/codecov
+  codecov: codecov/codecov@1.0.5
 jobs:
   vet:
     docker:
