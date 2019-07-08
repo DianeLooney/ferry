@@ -1,10 +1,28 @@
 version: 2
 jobs:
-  build:
+  vet:
     docker:
       - image: circleci/golang:1.12
     working_directory: /go/src/github.com/dianelooney/ferry
     steps:
       - checkout
       - run: go get -v -t -d ./...
-      - run: go test -v ./...
+      - run: go vet
+  test:
+    docker:
+      - image: circleci/golang:1.12
+    working_directory: /go/src/github.com/dianelooney/ferry
+    steps:
+      - checkout
+      - run: go get -v -t -d ./...
+      - run: mkdir coverage
+      - run: go test -v ./... -coverprofile=coverage/c.out
+      - run: go tool cover -html=coverage/c.out -o coverage/c.html
+      - store_artifacts:
+          path: coverage
+workflows:
+  version: 2
+  workflow:
+    jobs:
+    - vet
+    - test
