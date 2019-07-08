@@ -14,7 +14,7 @@ var e = empty{}
 // called. A single call to Done will unblock all goroutines Waiting on the
 // Ferry.
 //
-// Calling Done will unblock all currently Waiting goroutines
+// Calling Done will unblock all currently Waiting goroutines.
 //
 // If a Wait call occurs while a Ferry is still handling a Done call, then it
 // will wait for the Done to complete before it starts listening for a new
