@@ -2,8 +2,8 @@ package ferry
 
 import "sync"
 
-func NewValue() Value {
-	return Value{
+func NewValue() *Value {
+	return &Value{
 		ch: make(chan interface{}),
 	}
 }

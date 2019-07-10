@@ -25,8 +25,8 @@ type Ferry struct {
 	ch chan empty
 }
 
-func New() Ferry {
-	return Ferry{
+func New() *Ferry {
+	return &Ferry{
 		ch: make(chan empty),
 	}
 }

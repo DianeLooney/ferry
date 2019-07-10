@@ -55,7 +55,7 @@ func BenchmarkDone(b *testing.B) {
 }
 
 func benchmarkDone_NWaiters(b *testing.B, n int) {
-	arr := make([]Ferry, b.N)
+	arr := make([]*Ferry, b.N)
 	for i := 0; i < b.N; i++ {
 		f := New()
 		arr[i] = f

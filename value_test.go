@@ -74,7 +74,7 @@ func BenchmarkValue_Done(b *testing.B) {
 }
 
 func benchmarkValue_Done_NWaiters(b *testing.B, n int) {
-	arr := make([]Value, b.N)
+	arr := make([]*Value, b.N)
 	for i := 0; i < b.N; i++ {
 		f := NewValue()
 		arr[i] = f
