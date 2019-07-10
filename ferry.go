@@ -13,7 +13,7 @@ var e = empty{}
 //
 // Calling Done will unblocks all goroutines currently Waiting on the Ferry.
 //
-// A Ferry should only ever be used from ferry.New
+// A Ferry should only ever be used from ferry.New.
 //
 // If a Wait call occurs while a Ferry is still handling a Done call, then it
 // will wait for the Done to complete before it starts listening for a new
